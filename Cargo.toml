@@ -1,0 +1,17 @@
+[package]
+name = "axum_seaorm"
+version = "0.1.0"
+edition = "2024"
+
+[workspace]
+members = [".", "entity", "migration"]
+
+[dependencies]
+entity = { path = "entity" }
+migration = { path = "migration" }
+axum = "0.8.4"
+chrono = "0.4.41"
+dotenv = "0.15.0"
+sea-orm = { version = "1.1.12", features = ["sqlx-postgres", "runtime-tokio-rustls", "macros"] }
+tokio = { version = "1.45.1", features = ["full"] }
+uuid = { version = "1.17.0", features = ["v4"] }

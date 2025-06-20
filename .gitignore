@@ -1,0 +1,17 @@
+# Direktori target
+**/target/
+/target
+
+# File debug info
+*.log
+*.rs.bk
+
+# File environment
+.env
+
+# File IDE
+.vscode/
+.idea/
+
+# File build output
+**/*.rs.bk
