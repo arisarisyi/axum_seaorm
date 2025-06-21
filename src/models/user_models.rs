@@ -28,3 +28,16 @@ pub struct LoginUserModel{
 pub struct UpdateUserModel{
     pub name:String,
 }
+
+#[derive(Serialize,Deserialize)]
+pub struct LoginResponseModel{
+    pub token:String,
+}
+
+#[derive(Serialize,Deserialize)]
+pub struct GetAllUsersModel{
+    pub name:String,
+    pub email:String,
+    pub uuid:Uuid,
+    pub created_at:NaiveDateTime,
+}

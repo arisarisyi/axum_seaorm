@@ -2,19 +2,32 @@ use sea_orm::{ActiveModelTrait, QueryFilter};
 use sea_orm::ColumnTrait;
 use axum::http::StatusCode;
 use axum::{Extension, Json};
-use axum::response::IntoResponse;
 use bcrypt::{hash, verify, DEFAULT_COST};
 use chrono::Utc;
 use sea_orm::{ DatabaseConnection, EntityTrait, Set};
 use uuid::Uuid;
 use entity::user;
 use migration::Condition;
-use crate::models::user_models::{CreateUserModel, LoginUserModel, UserModel};
+use crate::models::user_models::{CreateUserModel, LoginResponseModel, LoginUserModel,};
+use crate::utils::api_error::APIError;
+use crate::utils::jwt::encode_jwt;
 
 pub async fn create_user_post(
     Extension(db):Extension<DatabaseConnection>,
     Json(user_data): Json<CreateUserModel>,
-) -> impl IntoResponse {
+) -> Result<(),APIError> {
+    
+    let find_user = entity::user::Entity::find()
+        .filter(entity::user::Column::Email.eq(user_data.email.clone())).one(&db)
+        .await
+        .map_err(|err|APIError{message:err.to_string()
+            ,status_code:StatusCode::INTERNAL_SERVER_ERROR, error_code:Some(50)})?;
+    
+    if find_user != None{
+        return Err(APIError{message:"User exists".to_string(), status_code:StatusCode::BAD_REQUEST
+            , error_code:Some(40)})
+    }
+    
     let password = hash(&user_data.password,DEFAULT_COST)
         .expect("Password hash invalid");
 
@@ -27,33 +40,52 @@ pub async fn create_user_post(
         ..Default::default()
     };
 
-    user_model.insert(&db).await.unwrap();
+    user_model.insert(&db).await
+        .map_err(|err|APIError{message:err.to_string()
+            ,status_code:StatusCode::INTERNAL_SERVER_ERROR, error_code:Some(50)})?;
 
-    (StatusCode::ACCEPTED, "Inserted!")
+   Ok({})
 }
 
 pub async fn login_user_post(
-    Extension(db):Extension<DatabaseConnection>,
+    Extension(db): Extension<DatabaseConnection>,
     Json(user_data): Json<LoginUserModel>,
-) -> impl IntoResponse {
+) -> Result<Json<LoginResponseModel>,APIError> {
+    let user = user::Entity::find()
+        .filter(Condition::all().add(user::Column::Email.eq(user_data.email.clone())))
+        .one(&db)
+        .await
+        .map_err(|err| APIError {
+            message: format!("DB Error: {}", err),
+            status_code: StatusCode::INTERNAL_SERVER_ERROR,
+            error_code: Some(50),
+        })?
+        .ok_or(APIError {
+            message: "User not found".to_string(),
+            status_code: StatusCode::NOT_FOUND,
+            error_code: Some(44),
+        })?;
 
-    let find_user = entity::user::Entity::find()
-        .filter(
-            Condition::all()
-                .add(entity::user::Column::Email.eq(user_data.email))
-        ).one(&db)
-        .await.unwrap().unwrap();
+    let is_valid = verify(&user_data.password, &user.password).map_err(|err| APIError {
+        message: format!("Hash verification failed: {}", err),
+        status_code: StatusCode::INTERNAL_SERVER_ERROR,
+        error_code: Some(50),
+    })?;
 
-
-    let _password_validated = verify(&user_data.password,&find_user.password).unwrap();
+    if !is_valid {
+        return Err(APIError {
+            message: "Incorrect password".to_string(),
+            status_code: StatusCode::BAD_REQUEST,
+            error_code: Some(40),
+        });
+    }
     
-    let data = UserModel{
-        name: find_user.name,
-        email:find_user.email,
-        password:find_user.password,
-        uuid:find_user.uuid,
-        created_at:find_user.created_at
+    let token = encode_jwt(user_data.email)
+        .map_err(|_|APIError{message:"Failed to login".to_owned(),status_code:StatusCode::UNAUTHORIZED,error_code:Some(41)})?;
+
+    let response = LoginResponseModel {
+     token
     };
 
-    (StatusCode::ACCEPTED, Json(data))
+    Ok(Json(response))
 }

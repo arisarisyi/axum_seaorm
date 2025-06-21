@@ -1,6 +1,6 @@
 use axum::http::Method;
 use axum::Router;
-use axum::routing::{get, post};
+use axum::routing::{post};
 use tower_http::cors::{Any, CorsLayer};
 use crate::handlers::auth_handlers::{create_user_post, login_user_post};
 
