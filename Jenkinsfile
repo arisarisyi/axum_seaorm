@@ -9,14 +9,10 @@ pipeline {
     string(name: 'REPO_URL', defaultValue: 'https://github.com/arisarisyi/axum_seaorm.git', description: 'GitHub Repo URL')
   }
 
-  environment {
-    SSH_CREDENTIAL_ID = credentials('mongo-dev') // ini dari Jenkins Credential
-  }
-
   stages {
     stage('Deploy to Mongo Dev') {
       steps {
-        sshagent([SSH_CREDENTIAL_ID]) {
+        sshagent(['mongo-dev']) {  // Gunakan ID dari SSH Credentials langsung di sini
           sh '''
           ssh -p $MONGO_PORT -o StrictHostKeyChecking=no $MONGO_USER@$MONGO_HOST <<'ENDSSH'
             source $HOME/.cargo/env
