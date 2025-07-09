@@ -12,7 +12,7 @@ pub async fn update_user_put(
     Extension(db):Extension<DatabaseConnection>,
     Path(uuid):Path<Uuid>,
     Json(user_data):Json<UpdateUserModel>,
-)-> Result<(),APIError> {
+)-> Result<String,APIError> {
 
     let mut user: entity::user::ActiveModel = entity::user::Entity::find()
         .filter(entity::user::Column::Uuid.eq(uuid))
@@ -33,7 +33,7 @@ pub async fn update_user_put(
     user.update(&db).await.map_err(|err|APIError{message:err.to_string()
         ,status_code:StatusCode::INTERNAL_SERVER_ERROR, error_code:Some(50)})?;
     
-    Ok({})
+    Ok("Successfully updated user".to_string())
 }
 
 pub async fn delete_user_delete(

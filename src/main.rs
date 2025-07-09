@@ -3,7 +3,6 @@ use axum::response::IntoResponse;
 use axum::{Extension, Router};
 use axum::routing::get;
 use sea_orm::Database;
-// ahhayyyyy
 mod models;
 mod routes;
 mod handlers;

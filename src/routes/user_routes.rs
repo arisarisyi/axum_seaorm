@@ -2,9 +2,10 @@ use axum::body::Body;
 use axum::http::Method;
 use axum::middleware::from_fn;
 use axum::Router;
-use axum::routing::{delete, get, put};
+use axum::routing::{delete, get, put,post};
 use tower_http::cors::{Any, CorsLayer};
 use crate::handlers::user_handlers::{all_users_get, delete_user_delete, update_user_put};
+use crate::handlers::post_handlers::{create_post_POST};
 use crate::utils;
 
 pub fn user_routes() ->Router{
@@ -16,5 +17,6 @@ pub fn user_routes() ->Router{
         .route("/api/user/{uuid}/update", put(update_user_put))
         .route("/api/users", get(all_users_get)).route_layer(from_fn(utils::guard::guard::<Body>))
         .route("/api/user/{uuid}",delete(delete_user_delete))
+        .route("/api/user/post",post(create_post_POST))
         .layer(cors)
 }
